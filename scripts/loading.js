@@ -7,6 +7,7 @@
   var statusText = document.getElementById('loading-status');
   var totalFiles = null;
   var remainingFiles = null;
+  var workshopDownloading = false;
 
   var designWidth = 1920;
   var designHeight = 1080;
@@ -24,17 +25,18 @@
 
   function setProgress(percent) {
     percent = Math.max(0, Math.min(100, percent));
-    progressBar.classList.remove('is-indeterminate');
     progressFill.style.width = percent + '%';
     progressBar.setAttribute('aria-valuenow', Math.round(percent));
     progressBar.removeAttribute('aria-valuetext');
   }
 
-  function showActivity() {
-    // Le statut Workshop ne fournit pas toujours de compteur exploitable.
-    progressBar.classList.add('is-indeterminate');
+  function startWorkshopDownload() {
+    workshopDownloading = true;
+    // Le menu du jeu conserve le pourcentage en octets côté Lua.
+    // Les compteurs FastDL ne décrivent pas ce téléchargement.
+    progressFill.style.width = '0%';
     progressBar.removeAttribute('aria-valuenow');
-    progressBar.setAttribute('aria-valuetext', 'Loading in progress');
+    progressBar.setAttribute('aria-valuetext', 'Téléchargement Workshop en cours : pourcentage indisponible');
   }
 
   function parseFileCount(value) {
@@ -43,8 +45,8 @@
   }
 
   function updateDownloadProgress() {
+    if (workshopDownloading) return;
     if (totalFiles === null || totalFiles <= 0 || remainingFiles === null) {
-      showActivity();
       return;
     }
 
@@ -64,6 +66,11 @@
 
   window.DownloadingFile = function (fileName) {
     statusText.textContent = 'Downloading ' + String(fileName);
+    if (/Workshop Content/i.test(String(fileName))) {
+      startWorkshopDownload();
+      return;
+    }
+    workshopDownloading = false;
     updateDownloadProgress();
   };
 
@@ -71,19 +78,24 @@
     var message = String(value);
     statusText.textContent = message;
 
+    if (/Downloading Workshop Content/i.test(message)) {
+      startWorkshopDownload();
+      return;
+    }
+
+    workshopDownloading = false;
+
     var workshopProgress = message.match(/Mounted\s+(\d+)\s+of\s+(\d+)\s+workshop addons/i);
     if (workshopProgress && Number(workshopProgress[2]) > 0) {
       var mountedAddons = Number(workshopProgress[1]);
       var totalAddons = Number(workshopProgress[2]);
       setProgress(mountedAddons / totalAddons * 100);
-    } else {
-      showActivity();
     }
   };
 
   window.addEventListener('resize', resizeLayout);
   resizeLayout();
-  showActivity();
+  setProgress(0);
 
   if (new URLSearchParams(window.location.search).get('preview') === '1') {
     window.SetStatusChanged('Mounted 122 of 122 workshop addons!');
