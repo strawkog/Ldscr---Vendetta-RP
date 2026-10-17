@@ -133,13 +133,31 @@ body {
 
 .bar-fill {
   position: absolute;
-  inset: 0;
-  clip-path: inset(0 100% 0 0);
-  transition: clip-path .3s ease;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 32px;
+  overflow: hidden;
+  transition: width .3s ease;
+}
+
+.is-indeterminate .bar-fill {
+  width: 100% !important;
+  animation: loading-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes loading-pulse {
+  0%, 100% { opacity: .25; }
+  50% { opacity: .85; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .bar-fill {
     transition: none;
+  }
+
+  .is-indeterminate .bar-fill {
+    animation: none;
+    opacity: .6;
   }
 }
