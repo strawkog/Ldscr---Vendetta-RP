@@ -24,8 +24,17 @@
 
   function setProgress(percent) {
     percent = Math.max(0, Math.min(100, percent));
-    progressFill.style.clipPath = 'inset(0 ' + (100 - percent) + '% 0 0)';
+    progressBar.classList.remove('is-indeterminate');
+    progressFill.style.width = percent + '%';
     progressBar.setAttribute('aria-valuenow', Math.round(percent));
+    progressBar.removeAttribute('aria-valuetext');
+  }
+
+  function showActivity() {
+    // Le statut Workshop ne fournit pas toujours de compteur exploitable.
+    progressBar.classList.add('is-indeterminate');
+    progressBar.removeAttribute('aria-valuenow');
+    progressBar.setAttribute('aria-valuetext', 'Loading in progress');
   }
 
   function parseFileCount(value) {
@@ -35,6 +44,7 @@
 
   function updateDownloadProgress() {
     if (totalFiles === null || totalFiles <= 0 || remainingFiles === null) {
+      showActivity();
       return;
     }
 
@@ -54,6 +64,7 @@
 
   window.DownloadingFile = function (fileName) {
     statusText.textContent = 'Downloading ' + String(fileName);
+    updateDownloadProgress();
   };
 
   window.SetStatusChanged = function (value) {
@@ -65,11 +76,14 @@
       var mountedAddons = Number(workshopProgress[1]);
       var totalAddons = Number(workshopProgress[2]);
       setProgress(mountedAddons / totalAddons * 100);
+    } else {
+      showActivity();
     }
   };
 
   window.addEventListener('resize', resizeLayout);
   resizeLayout();
+  showActivity();
 
   if (new URLSearchParams(window.location.search).get('preview') === '1') {
     window.SetStatusChanged('Mounted 122 of 122 workshop addons!');
